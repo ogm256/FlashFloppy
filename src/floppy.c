@@ -144,6 +144,20 @@ const static uint8_t *fintf, fintfs[][outp_nr] = {
         [outp_wrprot] = pin_28,
         [outp_rdy]    = pin_34,
         [outp_hden]   = pin_02 },
+    [FINTF_AMIGA_DD] = {
+        [outp_dskchg] = pin_02,
+        [outp_index]  = pin_08,
+        [outp_trk0]   = pin_26,
+        [outp_wrprot] = pin_28,
+        [outp_rdy]    = pin_unset,
+        [outp_hden]   = pin_unset },
+    [FINTF_AMIGA_HD] = {
+        [outp_dskchg] = pin_02,
+        [outp_index]  = pin_08,
+        [outp_trk0]   = pin_26,
+        [outp_wrprot] = pin_28,
+        [outp_rdy]    = pin_unset,
+        [outp_hden]   = pin_unset },
 };
 
 static void drive_change_output(struct drive *drv, uint8_t outp, bool_t assert)
@@ -215,10 +229,12 @@ void floppy_set_fintf_mode(uint8_t fintf_mode)
         [FINTF_SHUGART]     = "Shugart",
         [FINTF_IBMPC]       = "IBM PC",
         [FINTF_IBMPC_HDOUT] = "IBM PC + HD_OUT",
-        [FINTF_AKAI_S950]   = "Akai S950"
+        [FINTF_AKAI_S950]   = "Akai S950",
+        [FINTF_AMIGA_DD]    = "Amiga DD",
+        [FINTF_AMIGA_HD]    = "Amiga HD"
     };
     struct drive *drv = &drive;
-    uint32_t old_active;
+    uint32_t old_active, SELA_target;
     uint8_t outp;
 
     if (fintf_mode == FINTF_JC) {
@@ -249,6 +265,25 @@ void floppy_set_fintf_mode(uint8_t fintf_mode)
             uint16_t mask = m(fintf[outp]);
             gpio_out_active |= mask;
         }
+    }
+
+    /* Default handler for IRQ_SELA_changed */
+    SELA_target = (uint32_t)_IRQ_SELA_changed;
+
+    switch (fintf_mode) {
+    case FINTF_AMIGA_DD:
+        gpio_out_active |= m(pin_34);
+        break;
+    case FINTF_AMIGA_HD:
+        SELA_target = (uint32_t)Amiga_HD_ID;
+        break;
+    }
+
+    SELA_target -= (uint32_t)IRQ_SELA_changed + 6 + 4;
+    SELA_target = 0xe000 | (SELA_target >> 1);
+    if (unlikely(((uint16_t *)IRQ_SELA_changed)[3] != SELA_target)) {
+        ((uint16_t *)IRQ_SELA_changed)[3] = SELA_target;
+        cpu_sync(); /* synchronise self-modifying code */
     }
 
     gpio_write_pins(gpio_out, old_active & ~gpio_out_active, O_FALSE);

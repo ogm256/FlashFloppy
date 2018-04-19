@@ -474,6 +474,8 @@ static void read_ff_cfg(void)
                 : !strcmp(opts.arg, "ibmpc") ? FINTF_IBMPC
                 : !strcmp(opts.arg, "ibmpc-hdout") ? FINTF_IBMPC_HDOUT
                 : !strcmp(opts.arg, "akai-s950") ? FINTF_AKAI_S950
+                : !strcmp(opts.arg, "amiga-dd") ? FINTF_AMIGA_DD
+                : !strcmp(opts.arg, "amiga-hd") ? FINTF_AMIGA_HD
                 : FINTF_JC;
             break;
 
