@@ -92,7 +92,7 @@ asm (
 "    ldr  r0, [pc, #4]\n" /* r0 = gpio_out_active */
 "    ldr  r1, [pc, #8]\n" /* r1 = &gpio_out->b[s]rr */
 "    str  r0, [r1, #0]\n" /* gpio_out->b[s]rr = gpio_out_active */
-"    b.n  _IRQ_SELA_changed\n" /* branch to the main ISR entry point */
+"    b.n  Amiga_HD_ID\n"//_IRQ_SELA_changed\n" /* branch to the main ISR entry point */
 "gpio_out_active:   .word 0\n"
 "gpio_out_setreset: .word 0x40010c10\n" /* gpio_out->b[s]rr */
 "    .global IRQ_6\n"
@@ -143,6 +143,16 @@ static void _IRQ_SELA_changed(uint32_t _gpio_out_active)
         gpio_out_setreset &= ~4; /* gpio_out->bsrr */
     else
         gpio_out_setreset |= 4; /* gpio_out->brr */
+}
+
+static void Amiga_HD_ID(uint32_t _gpio_out_active, uint32_t _gpio_out_setreset)
+    __attribute__((used)) 
+    __attribute__((section(".data#")));
+static void Amiga_HD_ID(uint32_t _gpio_out_active, uint32_t _gpio_out_setreset)
+{
+    if (!(_gpio_out_setreset & 4))
+        gpio_out_active ^= m(pin_34);
+    _IRQ_SELA_changed(_gpio_out_active);
 }
 
 static bool_t drive_is_writing(void)
